@@ -1,6 +1,5 @@
 let connectedDevice = null;
 let writeCharacteristic = null;
-let scanning = false;
 
 document.addEventListener("DOMContentLoaded", () => {
   console.log("DOM fully loaded and parsed");
@@ -8,59 +7,31 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("scanButton").addEventListener("click", async () => {
     console.log("Scan button clicked");
 
-    if (scanning) {
-      log("Already scanning...");
-      return;
-    }
-
-    if (!navigator.bluetooth || !navigator.bluetooth.requestLEScan) {
-      log("Error: Bluetooth LE Scan is not supported in this browser.");
-      return;
-    }
-
     try {
       const options = {
-        acceptAllAdvertisements: true,
+        acceptAllDevices: true,
+        optionalServices: ['battery_service', 'device_information'],
       };
 
-      log("Starting BLE scan...");
-      scanning = true;
+      log("Starting device scan...");
+      const device = await navigator.bluetooth.requestDevice(options);
 
-      const scan = await navigator.bluetooth.requestLEScan(options);
+      if (device) {
+        log(`Device selected: ${device.name} (${device.id})`);
 
-      navigator.bluetooth.addEventListener("advertisementreceived", event => {
-        const device = event.device;
-        const rssi = event.rssi;
-        const payload = new TextDecoder().decode(event.manufacturerData.get(0xFFFF));
+        // Start watching advertisements
+        device.addEventListener('advertisementreceived', (event) => {
+          handleAdvertisementReceived(event);
+        });
 
-        log(`Advertisement received from ${device.name} (${device.id})`);
-        log(`RSSI: ${rssi}`);
-        log(`Payload: ${payload}`);
+        log('Watching advertisements from "' + device.name + '"...');
+        await device.watchAdvertisements();
 
-        // Display device information
-        const deviceInfo = `
-          Device Name: ${device.name}\n
-          Device ID (MAC Address): ${device.id}\n
-          RSSI: ${rssi}\n
-          Payload: ${payload}
-        `;
-        addDeviceToList(deviceInfo);
-
-        // Connect to the device when an advertisement is received
         connectToDevice(device);
-      });
-
-      // Stop scanning after 30 seconds
-      setTimeout(() => {
-        log("Stopping BLE scan...");
-        scan.stop();
-        scanning = false;
-        alert('Scanning stopped after 30 seconds');
-      }, 30000);
+      }
 
     } catch (error) {
       log("Error: " + error);
-      scanning = false;
     }
   });
 
@@ -89,6 +60,39 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
+function handleAdvertisementReceived(event) {
+  log('Advertisement received.');
+  log('  Device Name: ' + event.device.name);
+  log('  Device ID: ' + event.device.id);
+  log('  RSSI: ' + event.rssi);
+  log('  TX Power: ' + event.txPower);
+  log('  UUIDs: ' + event.uuids);
+
+  event.manufacturerData.forEach((valueDataView, key) => {
+    logDataView('Manufacturer', key, valueDataView);
+  });
+  event.serviceData.forEach((valueDataView, key) => {
+    logDataView('Service', key, valueDataView);
+  });
+
+  const deviceInfo = `
+    Device Name: ${event.device.name}\n
+    Device ID (MAC Address): ${event.device.id}\n
+    RSSI: ${event.rssi}\n
+    Payload: N/A
+  `;
+  addDeviceToList(deviceInfo);
+}
+
+function logDataView(type, key, valueDataView) {
+  let hexString = '';
+  const byteArray = new Uint8Array(valueDataView.buffer);
+  byteArray.forEach((byte) => {
+    hexString += ('0' + byte.toString(16)).slice(-2) + ' ';
+  });
+  log(`  ${type} Data: ${key} - ${hexString}`);
+}
 
 async function connectToDevice(device) {
   try {
