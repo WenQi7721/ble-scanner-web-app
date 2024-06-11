@@ -7,7 +7,11 @@
     <style>
       body {
         font-family: Arial, sans-serif;
-        text-align: center;
+        display: flex;
+        padding: 20px;
+      }
+      .container {
+        flex: 1;
         padding: 20px;
       }
       .button-container {
@@ -35,23 +39,36 @@
         border: 1px solid #ccc;
         margin: 10px 0;
         padding: 10px;
+        white-space: pre-wrap; /* Preserve newlines */
       }
-      hr {
-        margin-top: 10px;
+      #deviceListContainer {
+        flex: 1;
+        padding: 20px;
+        border-left: 1px solid #ccc;
       }
     </style>
   </head>
   <body>
-    <h1>BLE Scanner Web App</h1>
-    <button id="scanButton">Start Scanning</button>
-    <input
-      type="text"
-      id="payloadInput"
-      placeholder="Enter payload"
-      value="BLE Web"
-    />
-    <button id="sendButton">Send Custom BLE Packet</button>
-    <div id="result"></div>
+    <div class="container">
+      <h1>BLE Scanner Web App</h1>
+      <div class="button-container">
+        <button id="scanButton">Start Scanning</button>
+        <input
+          type="text"
+          id="payloadInput"
+          placeholder="Enter payload"
+          value="BLE Web"
+        />
+        <button id="sendButton">Send Custom BLE Packet</button>
+      </div>
+      <div id="log"></div>
+      <div id="result"></div>
+      <div id="error" style="color: red"></div>
+    </div>
+    <div id="deviceListContainer" class="container">
+      <h2>Connected Devices</h2>
+      <ul id="deviceList"></ul>
+    </div>
     <script src="app.js"></script>
   </body>
 </html>
