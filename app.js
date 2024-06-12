@@ -6,29 +6,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("scanButton").addEventListener("click", async () => {
     console.log("Scan button clicked");
-
     try {
       const options = {
-        acceptAllDevices: true,
-        optionalServices: ['battery_service', 'device_information'],
+        acceptAllAdvertisements: true, // This is required for requestLEScan
+        // Note: no filters, optionalServices, or acceptAllDevices here
       };
 
       log("Starting device scan...");
-      const device = await navigator.bluetooth.requestDevice(options);
+      const scan = await navigator.bluetooth.requestLEScan(options);
+      // if (scan) {
+      //   log(`Device selected: ${device.name} (${device.id})`);
 
-      if (device) {
-        log(`Device selected: ${device.name} (${device.id})`);
 
-        // Start watching advertisements
-        device.addEventListener('advertisementreceived', (event) => {
-          handleAdvertisementReceived(event);
-        });
+      navigator.bluetooth.addEventListener('advertisementreceived', (event) => {
+        handleAdvertisementReceived(event);
+      });
+      // log('Watching advertisements from "' + device.name + '"...');
+      //   await device.watchAdvertisements();
 
-        log('Watching advertisements from "' + device.name + '"...');
-        await device.watchAdvertisements();
-
-        connectToDevice(device);
-      }
+      log('Watching advertisements...');
 
     } catch (error) {
       log("Error: " + error);
@@ -83,6 +79,10 @@ function handleAdvertisementReceived(event) {
     Payload: N/A
   `;
   addDeviceToList(deviceInfo);
+
+  if (!connectedDevice) {
+    connectToDevice(event.device);
+  }
 }
 
 function logDataView(type, key, valueDataView) {
@@ -161,3 +161,4 @@ const addDeviceToList = (deviceInfo) => {
   deviceItem.textContent = deviceInfo;
   deviceList.appendChild(deviceItem);
 };
+ 
