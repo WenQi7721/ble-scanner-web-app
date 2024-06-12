@@ -12,7 +12,10 @@ document.addEventListener("DOMContentLoaded", () => {
       };
 
       log("Starting device scan...");
+      log(navigator);
+      log(navigator.bluetooth);
       const scan = await navigator.bluetooth.requestLEScan(options);
+      log(scan);
 
       if (scan.active) {
         log("Scan is active.");
@@ -36,7 +39,8 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("Send button clicked");
 
     try {
-      if (!connectedDevice || !writeCharacteristic) {
+      // if (!connectedDevice || !writeCharacteristic) {
+      if (!connectedDevice) {
         alert('No device connected or writable characteristic found. Please scan for a device first.');
         return;
       }
