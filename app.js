@@ -8,23 +8,24 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("Scan button clicked");
     try {
       const options = {
-        acceptAllAdvertisements: true, // This is required for requestLEScan
-        // Note: no filters, optionalServices, or acceptAllDevices here
+        acceptAllAdvertisements: true,
       };
 
       log("Starting device scan...");
       const scan = await navigator.bluetooth.requestLEScan(options);
-      // if (scan) {
-      //   log(`Device selected: ${device.name} (${device.id})`);
 
+      if (scan.active) {
+        log("Scan is active.");
 
-      navigator.bluetooth.addEventListener('advertisementreceived', (event) => {
-        handleAdvertisementReceived(event);
-      });
-      // log('Watching advertisements from "' + device.name + '"...');
-      //   await device.watchAdvertisements();
+        navigator.bluetooth.addEventListener('advertisementreceived', (event) => {
+          console.log("Advertisement received event fired");
+          handleAdvertisementReceived(event);
+        });
 
-      log('Watching advertisements...');
+        log('Watching advertisements...');
+      } else {
+        log("Scan is not active.");
+      }
 
     } catch (error) {
       log("Error: " + error);
@@ -58,6 +59,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function handleAdvertisementReceived(event) {
+  console.log('Advertisement received.');
   log('Advertisement received.');
   log('  Device Name: ' + event.device.name);
   log('  Device ID: ' + event.device.id);
@@ -153,6 +155,7 @@ function onDisconnected(event) {
 const log = (message) => {
   const logDiv = document.getElementById("log");
   logDiv.innerHTML += message + "\n";
+  console.log(message);  // Ensure logging in console for easier debugging
 };
 
 const addDeviceToList = (deviceInfo) => {
@@ -161,4 +164,3 @@ const addDeviceToList = (deviceInfo) => {
   deviceItem.textContent = deviceInfo;
   deviceList.appendChild(deviceItem);
 };
- 
