@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const options = {
         acceptAllDevices: true,
-        optionalServices: ['battery_service', 'device_information'],
+        optionalServices: ['battery_service', 'device_information']
       };
 
       log("Starting device scan...");
@@ -27,11 +27,22 @@ document.addEventListener("DOMContentLoaded", () => {
         log('Watching advertisements from "' + device.name + '"...');
         await device.watchAdvertisements();
 
-        connectToDevice(device);
+        await connectToDevice(device);
+        if (connectedDevice) {
+          log(`Successfully connected to device: ${connectedDevice.name} (${connectedDevice.id})`);
+        } else {
+          log(`Failed to update connectedDevice`);
+        }
       }
 
     } catch (error) {
-      log("Error: " + error);
+      if (error.name === 'NotFoundError') {
+        log("No devices found. Please make sure your device is in pairing mode.");
+      } else if (error.name === 'NotSupportedError') {
+        log("Web Bluetooth API is not supported by this browser.");
+      } else {
+        log("Error: " + error);
+      }
     }
   });
 
@@ -39,20 +50,20 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("Send button clicked");
 
     try {
-      if (!connectedDevice || !writeCharacteristic) {
-        alert('No device connected or writable characteristic found. Please scan for a device first.');
+      if (!connectedDevice) {
+        alert('No connected device found. Please scan and connect to a device first.');
+        return;
+      }
+      if (!writeCharacteristic) {
+        alert('No writable characteristic found. Please make sure your device supports writing.');
         return;
       }
 
-      const payload = document.getElementById('payloadInput').value;
-      if (!payload) {
-        alert('Please enter a payload to send.');
-        return;
-      }
+      // Prepare payload (example: sending a simple array of bytes)
+      const payload = new Uint8Array([0x01, 0x02, 0x03, 0x04]);
 
-      const encoder = new TextEncoder();
-      const data = encoder.encode(payload);
-      await writeCharacteristic.writeValue(data);
+      // Write value to characteristic
+      await writeCharacteristic.writeValue(payload);
 
       alert('Custom BLE packet sent!');
     } catch (error) {
@@ -127,10 +138,16 @@ async function connectToDevice(device) {
       log("Writable characteristic found: " + writeCharacteristic.uuid);
     }
 
+    // Update the connectedDevice variable
     connectedDevice = device;
+    log(`Connected to device: ${connectedDevice.name} (${connectedDevice.id})`);
 
   } catch (error) {
-    log("Error: " + error);
+    if (error.name === 'NotFoundError') {
+      log("No Services matching the UUID found in the device.");
+    } else {
+      log("Error: " + error);
+    }
   }
 }
 
@@ -148,6 +165,8 @@ async function findWritableCharacteristic(service) {
 function onDisconnected(event) {
   const device = event.target;
   log("Device " + device.name + " is disconnected.");
+  connectedDevice = null;
+  writeCharacteristic = null;
 }
 
 const log = (message) => {
